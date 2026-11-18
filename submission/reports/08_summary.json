@@ -1,0 +1,18 @@
+{
+  "verdict": {
+    "decision": "Release",
+    "n_errors": 0,
+    "n_warn_images": 13,
+    "n_images": 193,
+    "warn_ratio": 0.0674,
+    "reasons": [
+      "Không còn lỗi bắt buộc; có 13/193 ảnh còn cảnh báo (6.74%), thấp hơn ngưỡng 10.00%."
+    ]
+  },
+  "reviewed": 80,
+  "budget": 80,
+  "seconds": 2.0,
+  "exported": "/Users/phamm/Documents/K5-L23-Day09-PhamHoangMinh-03064-AutoQC-Pipeline-Lab/submission/export/clean_v1",
+  "config_sha1": "2d76848893d62f92a3c35dabb0dde384f214a9e3",
+  "review_sim_sha1": "7988ca22827f780a7043a2300490e679a1697154"
+}

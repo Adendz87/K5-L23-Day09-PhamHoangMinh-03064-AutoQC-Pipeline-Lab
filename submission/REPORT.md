@@ -1,36 +1,74 @@
-# Báo cáo Day 09 — <Họ và tên>, <MSHV>
-
-> Xoá mọi `TODO(học viên)` và dòng gợi ý. Mỗi ý trả lời bằng **số lấy từ `submission/reports/`**, kèm mẫu số. Cả báo cáo ~1–2 trang.
+# Báo cáo Day 09 — Phạm Hoàng Minh, 2A202603064
 
 ## 1. Kết luận trước
-TODO(học viên): pipeline kết luận **Release / Hold / Rework**? Bao nhiêu ảnh vào, bao nhiêu ảnh ra dataset? Lý do chính (1–3 câu).
+
+Pipeline kết luận **RELEASE**. Intake quét 224 ảnh, loại 31 ảnh (3 BAD_SIZE, 2 CORRUPT_IMAGE, 8 DUP_IMAGE_EXACT, 7 DUP_IMAGE_NEAR và 11 LEAK_TEST), còn 193 ảnh. Dataset `clean_v1` xuất thành công với 193 ảnh và 4 lớp: car, person, truck, bus.
+
+Sau vòng kiểm tra cuối, không còn lỗi bắt buộc; còn 13/193 ảnh có cảnh báo, tương đương 6,74%, thấp hơn ngưỡng Hold 10%. Pipeline hoàn thành trong 2 giây; mô phỏng người duyệt sử dụng đủ ngân sách 80/80 ảnh.
 
 ## 2. Lỗi và phân việc
-Lấy từ `02_error_list_v1` (gom theo mã lỗi). Cột "ai sửa": **máy** (autofix) hay **người** (hàng đợi); chỉ ghi những mã có mặt trong lô của bạn.
 
-| Mã lỗi | Số ảnh/dòng | Ai sửa (máy/người) | Vì sao |
+Số liệu lấy từ `02_error_list_v1.txt`. Các lỗi định dạng, hình học và intake được máy xử lý bằng autofix hoặc loại khỏi tập dữ liệu. Các lỗi thiếu nhãn và cảnh báo ngữ nghĩa cần người kiểm tra.
+
+| Mã lỗi | Số ảnh/dòng | Ai sửa | Cách xử lý |
 |---|---:|---|---|
-| TODO(học viên) | | | |
+| BAD_CLASS_ID | 6 | Máy | Xóa dòng nhãn sai class ID |
+| BAD_CLASS_NAME | 2 | Máy | Chuẩn hóa tên class |
+| BAD_FORMAT | 3 | Máy | Xóa dòng sai định dạng |
+| BAD_SIZE | 3 | Máy | Loại ảnh quá nhỏ |
+| BOX_OUT_OF_IMAGE | 8 | Máy | Clip box vào biên ảnh |
+| BOX_ZERO | 4 | Máy | Xóa box có diện tích bằng 0 |
+| CORRUPT_IMAGE | 2 | Máy | Loại ảnh hỏng |
+| DUP_BOX | 7 | Máy | Xóa box trùng |
+| DUP_IMAGE_EXACT | 8 | Máy | Loại ảnh trùng chính xác |
+| DUP_IMAGE_NEAR | 7 | Máy | Loại ảnh trùng gần đúng |
+| LEAK_TEST | 11 | Máy | Loại ảnh trùng tập test/val |
+| MISSING_LABEL_FILE | 6 | Người | Chuyển sang người gán nhãn |
+| BOX_HUGE | 3 | Người | Kiểm tra box quá lớn |
+| BOX_TINY | 6 | Người | Kiểm tra box quá nhỏ |
+| CLASS_RARE | 4 | Người | Kiểm tra lớp hiếm |
+| EMPTY_LABEL | 11 | Người | Phân biệt ảnh nền và thiếu nhãn |
+| POSSIBLE_FALSE_POS | 24 | Người | Kiểm tra box có thể gán nhầm |
+| POSSIBLE_LOOSE_BOX | 11 | Người | Kiểm tra box có thể quá rộng |
+| POSSIBLE_MISSING | 32 | Người | Kiểm tra đối tượng có thể thiếu box |
+| POSSIBLE_WRONG_CLASS | 13 | Người | Kiểm tra class có thể sai |
 
-TODO(học viên): vì sao `05_review_queue.csv` xếp ảnh đầu hàng như vậy? Với ngân sách 80 ảnh, người xem được bao nhiêu lỗi ngữ nghĩa?
+Hàng đợi có 98 ảnh nhưng ngân sách chỉ 80 ảnh. Ảnh `img_0020` đứng đầu với priority 11.524 do có nhiều tín hiệu cùng lúc: FIXED_DROP_LINE, POSSIBLE_MISSING và POSSIBLE_WRONG_CLASS. Các ảnh NEEDS_LABEL có priority 10 nên cũng được ưu tiên cao. Cách xếp hàng sử dụng trọng số theo mức độ nghiêm trọng và loại cảnh báo.
+
+Trong 80 ảnh được review, có 67 ảnh chứa ít nhất một cảnh báo ngữ nghĩa, tổng cộng 76 lượt cảnh báo: 20 POSSIBLE_FALSE_POS, 11 POSSIBLE_LOOSE_BOX, 32 POSSIBLE_MISSING và 13 POSSIBLE_WRONG_CLASS. Đây là số cảnh báo được đưa ra để xem xét, không đồng nghĩa tất cả đều là lỗi đã được xác nhận.
 
 ## 3. Calibration (2 ngưỡng)
-| Tham số | Khởi đầu | Đã chọn | Precision / Recall (trước → sau) | Lý do (đánh đổi) |
-|---|---|---|---|---|
-| `duplicates.phash_dist` | 2 | TODO(học viên) | | |
-| `second_opinion.conf` | 0.25 | TODO(học viên) | | |
 
-TODO(học viên): **một chỗ calibration có thể đánh lừa bạn**, kèm bằng chứng từ dữ liệu của bạn (vd. mở xem vài cặp ảnh bị cho là trùng; số ảnh bị loại ở bước 1 có hợp lý không?).
+| Tham số | Khởi đầu | Đã chọn | Precision / Recall trước → sau | Lý do |
+|---|---:|---:|---|---|
+| duplicates.phash_dist | 2 | 16 | Near: 1.00/0.50 → 1.00/0.83; Exact: 1.00/1.00 → 1.00/1.00 | Tăng khả năng phát hiện ảnh trùng gần đúng mà vẫn giữ kết quả exact |
+| second_opinion.conf | 0.25 | 0.8 | Wrong class: 0.56/0.83 → 1.00/0.83; Missing: 0.50/1.00 → 0.67/0.75 | Ưu tiên dự đoán có độ tin cậy cao, giảm cảnh báo sai cho wrong class |
+
+Với `second_opinion.conf`, loose box có precision/recall thay đổi từ 0.29/0.40 xuống 0.50/0.20; false positive giữ nguyên 0.36/1.00. Vì vậy ngưỡng 0.8 là lựa chọn đánh đổi, không cải thiện mọi nhóm lỗi.
+
+Một điểm dễ gây hiểu nhầm là tăng `phash_dist` không phải lúc nào cũng tốt hơn. Ở giá trị 16, F1 của near duplicate đạt 0.91; nhưng tại 20, F1 exact duplicate giảm còn 0.50 và near duplicate giảm còn 0.67. Trong dữ liệu intake có các cặp near duplicate với pHash 0, 6, 10 và 16. Vì vậy, cần xem trực quan các cặp ảnh trước khi quyết định loại, tránh loại nhầm ảnh khác nhau nhưng có hình thức tương tự.
 
 ## 4. Cửa chặn và điều pipeline KHÔNG bắt được
-TODO(học viên): (a) chứng minh gate chặn đúng: chạy `python -m pipeline.run --budget 0 --reports work/rep_nb --export-dir work/exp_nb` (không có người duyệt nên ảnh thiếu file nhãn còn nguyên), chỉ ra kết luận **Rework**, mã thoát 20 và việc **không xuất** dataset. (Đừng sửa tay `work/run/ds`: pipeline dựng lại thư mục này từ raw mỗi lần chạy.) (b) ≥ 2 điểm mù có bằng chứng (box lỏng nhẹ, nhầm lớp mà model lớn cũng nhầm, ảnh trùng biến đổi mạnh…).
 
-## 5. Train: raw vs clean (tùy chọn, chấm riêng)
-Chưa train: ghi "chưa chạy" và lý do, rồi bỏ qua phần còn lại của mục này. Nếu đã train: dán bảng từ `submission/results/comparison.md` (model, epoch, seed, số ảnh train mỗi biến thể).
+### 4.1. Kiểm chứng Gate
 
-TODO(học viên): chênh mAP50 (clean − raw) so với **độ lệch chuẩn giữa các seed**; kết luận **trung thực** (nằm trong nhiễu thì nói là chưa kết luận được); ≥ 2 giả thuyết giải thích (ảnh trùng/rò rỉ test trong `raw`, nhãn máy còn lại trong `clean`, test chỉ 100 ảnh…) và cách kiểm.
+Chạy pipeline với `--budget 0`, kết quả vẫn còn 6 lỗi bắt buộc sau vòng kiểm tra cuối. Gate kết luận **REWORK**, mã thoát `20`, đồng thời không xuất dataset. Đã kiểm tra `work/exp_nb/manifest.json` và xác nhận manifest không tồn tại. Điều này chứng minh pipeline không phát hành dữ liệu khi vẫn còn lỗi bắt buộc, kể cả khi không có ngân sách người duyệt.
+
+### 4.2. Điểm mù
+
+- **Không thể tự phân biệt ảnh nền và thiếu nhãn:** sau review vẫn còn 5 cảnh báo EMPTY_LABEL ở `img_0097`, `img_0129`, `img_0147`, `img_0184`, `img_0192`. File nhãn rỗng có thể là ảnh nền hợp lệ hoặc ảnh bị bỏ sót đối tượng; cần xem ảnh thực tế để quyết định.
+- **Second Opinion không phải ground truth:** sau review còn 11 POSSIBLE_FALSE_POS, 1 POSSIBLE_MISSING và 1 POSSIBLE_WRONG_CLASS. Ví dụ `img_0183` có đối tượng model phát hiện nhưng chưa có box tương ứng; `img_0078` có class nhãn khác dự đoán model. Model có thể dự đoán sai hoặc bỏ sót vật thể nên các cảnh báo này cần người xác minh.
+- **Box nhỏ vẫn cần đánh giá theo ngữ cảnh:** còn 6 cảnh báo BOX_TINY. Đối tượng ở xa có thể có box nhỏ nhưng vẫn đúng, vì vậy không thể tự động xóa chỉ dựa trên kích thước.
+
+## 5. Train: raw vs clean
+
+**Chưa chạy** trong lần kiểm tra này. Phần train là tùy chọn và báo cáo tập trung vào kiểm tra chất lượng dữ liệu, calibration và xác minh Gate. Vì chưa có kết quả train nên không đưa ra kết luận về chênh lệch mAP giữa raw và clean.
 
 ## 6. Quyết định và ghi chú AI
-TODO(học viên): (a) quyết định cuối; nếu Hold/Rework cần làm gì để thành Release? (b) Dùng AI viết code? Ghi 3 dòng: prompt chính, cách bạn kiểm code AI, 1 lần AI sai. Không dùng: ghi "không dùng".
 
-*(Thưởng +2, tùy chọn)* CVAT: lọc `width < 20`, ảnh/số box khớp, đối chiếu `BOX_TINY` (xem docs/CVAT_FILTER.md), 1 câu về `can_review`.
+**Quyết định cuối: RELEASE.** Dataset `clean_v1` có 193 ảnh, không còn lỗi bắt buộc và tỷ lệ ảnh còn cảnh báo là 6,74%, thấp hơn ngưỡng Hold 10%. Các cảnh báo còn lại cần tiếp tục được kiểm tra nếu dùng dữ liệu cho huấn luyện hoặc phát hành ở quy mô lớn.
+
+**Ghi chú sử dụng AI:**
+- Prompt chính: hỗ trợ triển khai các module label format, gate, autofix và second opinion theo yêu cầu lab và unit test.
+- Cách kiểm tra: chạy pytest (79 tests passed), xem kết quả calibration, chạy pipeline thực tế và thử Gate với ngân sách 0.
+- Một lỗi của AI: AI ban đầu chỉ sai tên file báo cáo v3, đề xuất `04_error_list_v3.txt`; sau khi đối chiếu danh sách file thực tế đã sửa thành `07_error_list_v3.txt`.
