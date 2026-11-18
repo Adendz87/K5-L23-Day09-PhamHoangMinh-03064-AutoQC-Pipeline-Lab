@@ -62,7 +62,26 @@ Chạy pipeline với `--budget 0`, kết quả vẫn còn 6 lỗi bắt buộc 
 
 ## 5. Train: raw vs clean
 
-**Chưa chạy** trong lần kiểm tra này. Phần train là tùy chọn và báo cáo tập trung vào kiểm tra chất lượng dữ liệu, calibration và xác minh Gate. Vì chưa có kết quả train nên không đưa ra kết luận về chênh lệch mAP giữa raw và clean.
+Thực hiện huấn luyện YOLO26n trên hai biến thể dữ liệu raw và clean, mỗi biến thể chạy 2 seeds (0, 1), 20 epochs, imgsz 640, batch 16. Quá trình train sử dụng GPU NVIDIA Tesla T4 trên Google Colab.
+
+Biến thể	Ảnh train	Seeds	mAP50	mAP50-95	Precision	Recall
+raw	224	2	0.726 ± 0.000	0.512 ± 0.004	0.764 ± 0.061	0.649 ± 0.028
+clean	193	2	0.730 ± 0.008	0.517 ± 0.007	0.767 ± 0.021	0.642 ± 0.009
+
+Chênh lệch mAP50 (Clean − Raw) là +0.004; mAP50-95 tăng +0.005; Precision tăng +0.003; Recall giảm −0.007.
+
+5.2. Nhận xét
+Clean có ít hơn 31 ảnh train so với Raw nhưng đạt mAP50 và mAP50-95 cao hơn một chút. Precision cũng tăng nhẹ, trong khi Recall giảm nhẹ. Điều này cho thấy việc lọc dữ liệu không làm giảm hiệu năng tổng thể trong thử nghiệm này và có dấu hiệu cải thiện chất lượng dự đoán.
+
+Tuy nhiên, mức chênh lệch mAP50 chỉ là 0.004, tương đối nhỏ. Với 2 seeds, chưa đủ cơ sở để khẳng định Clean tốt hơn một cách có ý nghĩa thống kê. Độ dao động giữa các seeds cũng cần được xem xét, đặc biệt ở Precision của Raw (độ lệch 0.061).
+5.3. Giả thuyết và cách kiểm chứng
+- Giả thuyết 1 – Loại bỏ dữ liệu nhiễu giúp mô hình tổng quát hóa tốt hơn: Raw chứa ảnh trùng, ảnh gần trùng hoặc dữ liệu không phù hợp; việc làm sạch có thể giảm ảnh hưởng của những mẫu này. Cách kiểm chứng: so sánh mAP50 và mAP50-95 trên cùng tập test độc lập, tăng số seeds và đối chiếu các trường hợp dự đoán sai giữa hai mô hình.
+- Giả thuyết 2 – Giảm số lượng ảnh có thể làm mất một phần thông tin hữu ích: Clean loại 31 ảnh, trong đó có thể có các mẫu khó hoặc trường hợp hiếm. Điều này có thể góp phần khiến Recall giảm nhẹ. Cách kiểm chứng: phân tích false negative theo lớp, kiểm tra các ảnh bị loại và thực hiện thí nghiệm ablation bằng cách bổ sung lại từng nhóm ảnh đã loại.
+5.4. Kết luận
+Trong thử nghiệm hiện tại, Clean đạt kết quả mAP50 và mAP50-95 nhỉnh hơn Raw dù sử dụng ít ảnh train hơn. Đây là tín hiệu tích cực cho quy trình AutoQC: chất lượng dữ liệu có thể quan trọng hơn số lượng ảnh đơn thuần. Tuy nhiên, do chỉ sử dụng 2 seeds và chênh lệch còn nhỏ, cần thử nghiệm thêm với nhiều seeds và tập dữ liệu lớn hơn trước khi kết luận chắc chắn.
+
+Kết quả được lưu tại submission/results/, gồm raw_seed0.json, raw_seed1.json, clean_seed0.json, clean_seed1.json, comparison.md, comparison.json và comparison.png.
+
 
 ## 6. Quyết định và ghi chú AI
 
